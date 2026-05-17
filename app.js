@@ -18,25 +18,58 @@ function countRated(){
   return{total:t,bySubj:b};
 }
 
-// ===== PERSISTENCE =====
+// ===== PERSISTENCE (Google Sheets API + localStorage cache) =====
+const API_URL="https://script.google.com/macros/s/AKfycbyXn_lVDreLMsfOb7vYYE4ISMPpY98TJv7dGsVJQ2k-En_8ZV71w56AQThtqTRF52DN/exec";
+
 function genCode(){return Math.random().toString(36).substr(2,8).toUpperCase()}
+
 function saveState(){
   const code=state.planCode||genCode();
   state.planCode=code;
   const data={name:state.name,startDate:state.startDate.toISOString(),ratings:state.ratings,calendar:state.calendar,notes:state.notes,backlog:[...state.backlog],planCode:code,savedAt:new Date().toISOString()};
+  // Save to localStorage (fast cache)
   localStorage.setItem("jee_plan_"+code,JSON.stringify(data));
   localStorage.setItem("jee_plan_latest",code);
+  // Save to Google Sheets (cloud backup, fire-and-forget)
+  saveToCloud(data);
   return code;
 }
+
+function saveToCloud(data){
+  const payload={code:data.planCode,name:data.name,start_date:data.startDate,ratings:data.ratings,calendar:data.calendar,notes:data.notes,backlog:data.backlog};
+  fetch(API_URL,{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify(payload),redirect:"follow"}).catch(e=>console.warn("Cloud save failed:",e));
+}
+
 function loadState(code){
+  // Try localStorage first
   const raw=localStorage.getItem("jee_plan_"+code);
-  if(!raw)return false;
-  const d=JSON.parse(raw);
+  if(raw){
+    applyLoadedData(JSON.parse(raw));
+    return true;
+  }
+  return false;
+}
+
+async function loadFromCloud(code){
+  try{
+    const resp=await fetch(API_URL+"?code="+encodeURIComponent(code),{redirect:"follow"});
+    const json=await resp.json();
+    if(json.success&&json.plan){
+      const p=json.plan;
+      const data={name:p.name,startDate:p.start_date,ratings:p.ratings||{},calendar:p.calendar||[],notes:p.notes||{},backlog:p.backlog||[],planCode:p.code};
+      // Cache locally
+      localStorage.setItem("jee_plan_"+code,JSON.stringify(data));
+      applyLoadedData(data);
+      return true;
+    }
+  }catch(e){console.warn("Cloud load failed:",e)}
+  return false;
+}
+
+function applyLoadedData(d){
   state.name=d.name;state.startDate=new Date(d.startDate);state.ratings=d.ratings||{};
   state.calendar=d.calendar||[];state.notes=d.notes||{};state.backlog=new Set(d.backlog||[]);state.planCode=d.planCode;
-  // Restore dates
   state.calendar.forEach(w=>{w.start=new Date(w.start);w.end=new Date(w.end)});
-  return true;
 }
 
 // ===== SCREEN 1: WELCOME =====
@@ -47,7 +80,7 @@ function initWelcome(){
   const inp=$("#student-name"),btn=$("#btn-start");
   inp.addEventListener("input",()=>{state.name=inp.value.trim();btn.disabled=!state.name});
   btn.addEventListener("click",()=>{if(!state.name)return;$("#assess-student-name").textContent=state.name;renderUnits("mathematics");show("#screen-assess")});
-  // Resume button
+  // Resume button (from localStorage)
   const latest=localStorage.getItem("jee_plan_latest");
   if(latest&&localStorage.getItem("jee_plan_"+latest)){
     const d=JSON.parse(localStorage.getItem("jee_plan_"+latest));
@@ -59,12 +92,23 @@ function initWelcome(){
     });
     btn.parentNode.insertBefore(resumeBtn,btn.nextSibling);
   }
-  // Load by code
+  // Load by code (tries localStorage first, then cloud)
   const codeInp=$("#plan-code-input"),codeBtn=$("#btn-load-code");
-  if(codeBtn){codeBtn.addEventListener("click",()=>{
+  if(codeBtn){codeBtn.addEventListener("click",async()=>{
     const c=codeInp.value.trim().toUpperCase();
-    if(c&&loadState(c)){renderDashboard();renderCalendar();renderPool();show("#screen-calendar")}
-    else{codeInp.style.borderColor="var(--r0)";setTimeout(()=>codeInp.style.borderColor="",1500)}
+    if(!c)return;
+    codeBtn.textContent="Loading...";codeBtn.disabled=true;
+    // Try local first
+    if(loadState(c)){
+      renderDashboard();renderCalendar();renderPool();show("#screen-calendar");
+      codeBtn.textContent="Load Plan";codeBtn.disabled=false;
+      return;
+    }
+    // Try cloud
+    const ok=await loadFromCloud(c);
+    if(ok){renderDashboard();renderCalendar();renderPool();show("#screen-calendar")}
+    else{codeInp.style.borderColor="var(--r0)";showToast("❌ Plan not found. Check your code.");setTimeout(()=>codeInp.style.borderColor="",1500)}
+    codeBtn.textContent="Load Plan";codeBtn.disabled=false;
   })}
 }
 
