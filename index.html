@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JEE 2027 Study Planner — Self-Assessment & Personalized Calendar</title>
+  <meta name="description" content="Self-assess your JEE 2027 preparation level and generate a personalized study calendar through December 2026.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- ===== SCREEN 1: STUDENT INFO ===== -->
+  <div id="screen-welcome" class="screen active">
+    <div class="welcome-container">
+      <div class="logo-area">
+        <div class="logo-icon">
+          <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="24" cy="24" r="22" stroke="url(#grad1)" stroke-width="2.5" fill="none"/>
+            <path d="M14 32 L24 12 L34 32" stroke="url(#grad1)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            <line x1="18" y1="26" x2="30" y2="26" stroke="url(#grad1)" stroke-width="2" stroke-linecap="round"/>
+            <defs>
+              <linearGradient id="grad1" x1="0" y1="0" x2="48" y2="48">
+                <stop offset="0%" stop-color="#818cf8"/>
+                <stop offset="50%" stop-color="#22d3ee"/>
+                <stop offset="100%" stop-color="#f59e0b"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <h1 class="app-title">JEE 2027 Study Planner</h1>
+        <p class="app-subtitle">Self-assess your preparation level, get a personalized study calendar</p>
+      </div>
+      <div class="glass-card welcome-card">
+        <div class="input-group">
+          <label for="student-name">What's your name?</label>
+          <input type="text" id="student-name" placeholder="Enter your name" autocomplete="off" autofocus>
+        </div>
+        <div class="info-pills">
+          <div class="info-pill">
+            <span class="pill-icon">📅</span>
+            <span class="pill-text">Start: <strong id="display-start-date"></strong></span>
+          </div>
+          <div class="info-pill">
+            <span class="pill-icon">🎯</span>
+            <span class="pill-text">Target: <strong>Dec 15, 2026</strong></span>
+          </div>
+          <div class="info-pill">
+            <span class="pill-icon">⏱️</span>
+            <span class="pill-text"><strong id="display-weeks"></strong> weeks of preparation</span>
+          </div>
+        </div>
+        <button id="btn-start" class="btn-primary" disabled>
+          Start Assessment
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M7 4l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+      <div class="glass-card welcome-card" style="gap:12px">
+        <div class="input-group">
+          <label for="plan-code-input">Already have a plan? Enter your code</label>
+          <div style="display:flex;gap:8px">
+            <input type="text" id="plan-code-input" placeholder="e.g. A1B2C3D4" style="text-transform:uppercase;letter-spacing:0.1em;flex:1" autocomplete="off">
+            <button id="btn-load-code" class="btn-secondary">Load Plan</button>
+          </div>
+        </div>
+      </div>
+      <div class="rating-legend-preview">
+        <h3>How to rate yourself</h3>
+        <div class="legend-items">
+          <div class="legend-item"><span class="legend-dot r0"></span><strong>0</strong> — Not studied at all</div>
+          <div class="legend-item"><span class="legend-dot r1"></span><strong>1</strong> — Aware of basics, need to re-study</div>
+          <div class="legend-item"><span class="legend-dot r2"></span><strong>2</strong> — Know all concepts, ready to practice</div>
+          <div class="legend-item"><span class="legend-dot r3"></span><strong>3</strong> — Can solve book-level problems</div>
+          <div class="legend-item"><span class="legend-dot r4"></span><strong>4</strong> — Can solve JEE-level problems</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SCREEN 2: SELF-ASSESSMENT ===== -->
+  <div id="screen-assess" class="screen">
+    <header class="assess-header">
+      <div class="header-left">
+        <button id="btn-back-welcome" class="btn-icon" title="Back">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M13 16l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div>
+          <h2 id="assess-title">Self-Assessment</h2>
+          <p class="header-sub" id="assess-student-name"></p>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="progress-container">
+          <div class="progress-text"><span id="progress-count">0</span> / 54 rated</div>
+          <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+        </div>
+        <button id="btn-generate" class="btn-primary btn-sm" disabled>
+          Generate Plan
+          <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M7 4l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="subject-tabs">
+      <button class="tab active" data-subject="mathematics">
+        <span class="tab-dot math"></span>Mathematics <span class="tab-count" id="count-math">0/14</span>
+      </button>
+      <button class="tab" data-subject="physics">
+        <span class="tab-dot physics"></span>Physics <span class="tab-count" id="count-physics">0/20</span>
+      </button>
+      <button class="tab" data-subject="chemistry">
+        <span class="tab-dot chemistry"></span>Chemistry <span class="tab-count" id="count-chemistry">0/20</span>
+      </button>
+    </div>
+
+    <div class="rating-legend-bar">
+      <span class="legend-chip r0">0 — Not studied</span>
+      <span class="legend-chip r1">1 — Basics, need re-study</span>
+      <span class="legend-chip r2">2 — Concepts clear, ready to practice</span>
+      <span class="legend-chip r3">3 — Book-level problems</span>
+      <span class="legend-chip r4">4 — JEE-level problems</span>
+    </div>
+
+    <div class="units-container" id="units-container">
+      <!-- Units rendered by JS -->
+    </div>
+  </div>
+
+  <!-- ===== SCREEN 3: STUDY CALENDAR ===== -->
+  <div id="screen-calendar" class="screen">
+    <header class="calendar-header">
+      <div class="header-left">
+        <button id="btn-back-assess" class="btn-icon" title="Back to Assessment">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M13 16l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div>
+          <h2>Study Calendar</h2>
+          <p class="header-sub" id="calendar-student-name"></p>
+        </div>
+      </div>
+      <div class="header-right">
+        <button id="btn-export-pdf" class="btn-primary btn-sm">
+          <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M10 3v10M10 13l-3-3M10 13l3-3M4 17h12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Export PDF
+        </button>
+      </div>
+    </header>
+
+    <!-- Dashboard Summary -->
+    <div class="dashboard" id="dashboard">
+      <div class="glass-card dash-card readiness-card">
+        <h3>Overall Readiness</h3>
+        <div class="readiness-ring-container">
+          <svg class="readiness-ring" viewBox="0 0 120 120">
+            <circle cx="60" cy="60" r="52" stroke="rgba(255,255,255,0.08)" stroke-width="10" fill="none"/>
+            <circle id="readiness-arc" cx="60" cy="60" r="52" stroke="url(#ringGrad)" stroke-width="10" fill="none"
+                    stroke-dasharray="326.7" stroke-dashoffset="326.7" stroke-linecap="round"
+                    transform="rotate(-90 60 60)"/>
+            <defs>
+              <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#818cf8"/>
+                <stop offset="100%" stop-color="#22d3ee"/>
+              </linearGradient>
+            </defs>
+          </svg>
+          <div class="readiness-score" id="readiness-score">0%</div>
+        </div>
+      </div>
+      <div class="glass-card dash-card subjects-card">
+        <h3>Subject Readiness</h3>
+        <div id="subject-bars"></div>
+      </div>
+      <div class="glass-card dash-card focus-card">
+        <h3>Priority Focus</h3>
+        <div id="focus-list"></div>
+      </div>
+    </div>
+
+    <!-- Editable Calendar -->
+    <div class="calendar-controls">
+      <p class="calendar-hint">💡 <strong>Drag & drop</strong> topics between weeks | 📝 Add notes per topic | ⏸️ Mark topics as backlog | ✕ Remove to unassigned pool | Your plan auto-saves with a unique code</p>
+    </div>
+    <div class="calendar-grid" id="calendar-grid">
+      <!-- Weeks rendered by JS -->
+    </div>
+
+    <!-- Unassigned topics pool -->
+    <div class="unassigned-pool glass-card" id="unassigned-pool">
+      <h3>📦 Unassigned Topics <span class="pool-hint">(drag here to remove from calendar, drag back to add)</span></h3>
+      <div class="pool-items" id="pool-items"></div>
+    </div>
+  </div>
+
+  <!-- PDF Export Container (hidden, used for PDF generation) -->
+  <div id="pdf-container" style="display:none;"></div>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
